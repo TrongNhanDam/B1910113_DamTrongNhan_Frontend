@@ -8,6 +8,10 @@
         Danh bạ
         <i class="fas fa-address-book"></i>
       </h4>
+      <div class="d-flex justify-content-start align-items-center pt-1 pb-3">
+        <button class="btn" @click="checkFavorite"
+          :class="isFavorite ? 'btn-warning' : 'btn-outline-warning'">Favorite</button>
+      </div>
       <ContactList v-if="filteredContactsCount > 0" :contacts="filteredContacts" v-model:activeIndex="activeIndex" />
       <p v-else>Không có liên hệ nào.</p>
       <div class="mt-3 row justify-content-around align-items-center">
@@ -31,7 +35,8 @@
         <ContactCard :contact="activeContact" />
         <router-link :to="{ name: 'contact.edit', params: { id: activeContact._id } }">
           <span class="mt-2 badge badge-warning">
-            <i class="fas fa-edit"></i> Hiệu chỉnh</span>
+            <i class="fas fa-edit"></i> Hiệu chỉnh
+          </span>
         </router-link>
       </div>
     </div>
@@ -50,6 +55,7 @@ export default {
       contacts: [],
       activeIndex: -1,
       searchText: "",
+      isFavorite: false
     };
   },
   watch: {
@@ -66,8 +72,9 @@ export default {
     },
     filteredContacts() {
       if (!this.searchText) return this.contacts;
-      return this.contacts.filter((_contact, index) =>
-        this.contactStrings[index].includes(this.searchText)
+      return this.contacts.filter((_contact, index) => {
+        return this.contactStrings[index].includes(this.searchText)
+      }
       );
     },
     activeContact() {
@@ -79,11 +86,23 @@ export default {
     },
   },
   methods: {
+    checkFavorite() {
+      this.isFavorite = !this.isFavorite
+      this.refreshList();
+    },
     async retrieveContacts() {
-      try {
-        this.contacts = await ContactService.getAll();
-      } catch (error) {
-        console.log(error);
+      if (this.isFavorite) {
+        try {
+          this.contacts = await ContactService.favorite();
+        } catch (error) {
+          console.log(error);
+        }
+      } else {
+        try {
+          this.contacts = await ContactService.getAll();
+        } catch (error) {
+          console.log(error);
+        }
       }
     },
     refreshList() {
@@ -91,18 +110,33 @@ export default {
       this.activeIndex = -1;
     },
     async removeAllContacts() {
-      if (confirm("Bạn muốn xóa tất cả liên hệ?")) {
-        try {
-          await ContactService.deleteAll();
-          this.refreshList();
-        } catch (error) {
-          console.log(error);
-        }
-      }
+      await Swal.fire({
+        title: 'Bạn có chắc muốn xóa tất cả liên hệ',
+        text: "Bạn không thể phục hồi khi xóa",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#3085d6',
+        cancelButtonColor: '#d33',
+        confirmButtonText: 'Xóa!'
+      })
+        .then(async (result) => {
+          if (result.isConfirmed) {
+            try {
+              await ContactService.deleteAll();
+              this.refreshList();
+            } catch (error) {
+              console.log(error);
+            }
+            await Swal.fire(
+              'Đã xóa',
+              'Danh sách liên hệ của bạn đã bị xóa',
+              'success'
+            )
+          }
+        })
     },
     goToAddContact() {
       this.$router.push({ name: "contact.add" });
-      // console.log("this router", this.$router)
     },
   },
   mounted() {

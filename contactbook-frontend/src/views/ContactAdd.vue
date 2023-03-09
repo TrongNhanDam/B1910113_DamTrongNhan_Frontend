@@ -2,7 +2,7 @@
     <div v-if="contact" class="page">
         <h4>Hiệu chỉnh Liên hệ</h4>
         <ContactForm :contact="contact" @submit:contact="addContact" />
-        <p>{{ message }}</p>
+        <!-- <p>{{ message }}</p> -->
     </div>
 </template>
 <script>
@@ -15,7 +15,7 @@ export default {
     data() {
         return {
             contact: {},
-            message: "",
+            // message: "",
         };
     },
 
@@ -23,7 +23,13 @@ export default {
         async addContact(data) {
             try {
                 await ContactService.create(data);
-                this.message = "Liên hệ được tạo thành công";
+                // this.message = "Liên hệ được tạo thành công";
+                await Swal.fire(
+                    'Thêm thành công',
+                    'Bạn đã thêm vào liên hệ mới',
+                    'success'
+                )
+                this.$router.push({ name: "contactbook" });
             } catch (error) {
                 console.log(error);
             }
